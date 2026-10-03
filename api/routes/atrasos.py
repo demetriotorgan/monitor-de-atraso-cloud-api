@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from models import AtrasoCreate, AtrasoResponse, AtrasoUpdate
-import httpx
-from services.notificacao_service import reenviar_notificacao
 
+from services.notificacao_service import reenviar_notificacao
 from services.atraso_service import (
     registrar_atraso,
     listar_atrasos,
@@ -12,22 +11,18 @@ from services.atraso_service import (
     atualizar_parcialmente
 )
 
-from services.whatsapp_service import enviar_mensagem
+router = APIRouter(prefix="/atrasos", tags=["Atrasos"])
 
-
-router = APIRouter(prefix="/atrasos")
-
-#---------ROta post--------
-@router.post('/', response_model = AtrasoResponse, status_code=status.HTTP_201_CREATED)
-def criar(atraso: AtrasoCreate):    
+#---------ROTA POST--------
+@router.post('/', response_model=AtrasoResponse, status_code=status.HTTP_201_CREATED)
+def criar(atraso: AtrasoCreate):
     try:
-        #1-Criando registor de atraso 
-        resultado = registrar_atraso(atraso)
+        resultado = registrar_atraso(atraso) # já envia template e atualiza status
+
         if resultado is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Aluno não encontrado"
-            )        
+            raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+        # resultado é uma tupla: (id, aluno_id, data_hora, motivo, status)
         return {
             "id": resultado[0],
             "aluno_id": resultado[1],
@@ -35,90 +30,84 @@ def criar(atraso: AtrasoCreate):
             "motivo": resultado[3],
             "status_notificacao": resultado[4]
         }
-        
+
     except HTTPException:
-        raise        
-    except (httpx.HTTPStatusError, httpx.RequestError):
-        raise HTTPException(
-            status_code=502,
-            detail="Atraso registrado, mas não foi possível enviar a notificação"
-        )
+        raise
     except Exception as erro:
+        print(f"[ERRO /atrasos POST] {erro}")
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao registrar atraso: {erro}"
         )
 
-#---------Rota Get--------
+#---------ROTA GET--------
 @router.get('/', response_model=list[AtrasoResponse])
 def listar():
     try:
         return listar_atrasos()
-    
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f'Erro ao listar atrasos: {erro}'
-        )
-#---------Rota Get by ID--------
+        raise HTTPException(status_code=500, detail=f'Erro ao listar atrasos: {erro}')
+
+#---------ROTA GET BY ID--------
 @router.get('/{id}', response_model=AtrasoResponse)
 def buscar(id: int):
     try:
-        return buscar_atraso(id)    
+        resultado = buscar_atraso(id)
+        if resultado is None:
+            raise HTTPException(status_code=404, detail="Atraso não encontrado")
+        return resultado
+    except HTTPException:
+        raise
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao buscar atraso: {erro}"
-        )
-                
-#----------------Rota Delete by ID--------
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar atraso: {erro}")
+
+#---------ROTA DELETE--------
 @router.delete('/{id}')
-def excluir(id:int):
+def excluir(id: int):
     try:
         return excluir_atraso(id)
     except HTTPException:
         raise
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f'Erro ao excluir atraso:{erro}'
-        )
-#--------ROTA PUT by ID-------------
+        raise HTTPException(status_code=500, detail=f'Erro ao excluir atraso: {erro}')
+
+#---------ROTA PUT--------
 @router.put("/{id}", response_model=AtrasoResponse)
-def atualizar(id: int, atraso: AtrasoCreate):    
+def atualizar(id: int, atraso: AtrasoCreate):
     try:
-        return atualizar_atraso(id,atraso)         
+        return atualizar_atraso(id, atraso)
     except HTTPException:
         raise
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f'Erro ao atualizar atraso {erro}'
-        )
-#--------ROTA PATCH by ID-------------
+        raise HTTPException(status_code=500, detail=f'Erro ao atualizar atraso {erro}')
+
+#---------ROTA PATCH--------
 @router.patch("/{id}", response_model=AtrasoResponse)
-def atualizar_parcial(id:int , atraso: AtrasoUpdate):
+def atualizar_parcial(id: int, atraso: AtrasoUpdate):
     try:
-        return atualizar_parcialmente(id, atraso)        
-        
+        return atualizar_parcialmente(id, atraso)
     except HTTPException:
         raise
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f'Erro ao atualizar parcialmente o atraso: {erro}'
-        )
-#---Rota Retry-----
+        raise HTTPException(status_code=500, detail=f'Erro ao atualizar parcialmente: {erro}')
+
+#---------ROTA RETRY (REENVIO COM TEMPLATE)--------
 @router.post("/{id}/reenviar", response_model=AtrasoResponse)
 def reenviar(id: int):
     try:
-        return reenviar_notificacao(id)
+        registro = reenviar_notificacao(id) # agora usa template
+        if registro is None:
+            raise HTTPException(status_code=404, detail="Atraso não encontrado")
 
+        return {
+            "id": registro[0],
+            "aluno_id": registro[1],
+            "data_hora": registro[2],
+            "motivo": registro[3],
+            "status_notificacao": registro[4]
+        }
     except HTTPException:
         raise
-
     except Exception as erro:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao reenviar notificação: {erro}"
-        )
+        print(f"[ERRO REENVIO] {erro}")
+        raise HTTPException(status_code=500, detail=f"Erro ao reenviar notificação: {erro}")

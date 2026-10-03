@@ -2,7 +2,7 @@ from fastapi import  HTTPException
 from models import AtrasoCreate, AtrasoUpdate
 from database import get_connection
 from services.aluno_service import buscar_aluno
-from services.whatsapp_service import enviar_mensagem
+from services.whatsapp_service import enviar_whatsapp_template
 import httpx
 
 
@@ -57,35 +57,33 @@ def registrar_atraso(atraso: AtrasoCreate):
     if resultado is None:
         return None
 
-    registro = resultado["atraso"]
-    aluno = resultado["aluno"]
+    registro = resultado["atraso"] # [id, aluno_id, data_hora, motivo, status]
+    aluno = resultado["aluno"] # [id, nome, turma, responsavel, telefone]
 
-    texto = f"""
-📚 Monitor de Atraso — Registro de Chegada
-Olá, {aluno[3]}! 👋
-Informamos que o(a) aluno(a) {aluno[1]} chegou à escola após o horário previsto.
+    responsavel = aluno[3]
+    aluno_nome = aluno[1]
+    telefone = aluno[4]
+    motivo = registro[3]
+    data_formatada = registro[2].strftime("%d/%m/%Y às %H:%M")
 
-    🕐 Data e horário: {registro[2].strftime("%d/%m/%Y às %H:%M")}
-    📌 Motivo informado: {registro[3]}
-
-O registro foi realizado pela equipe escolar.
-Agradecemos a atenção e a parceria! 🤝
-
-🏫 Monitor de Atraso - Colégio Ary João Dresch
-"""
-    try:    
-        enviar_mensagem(
-            number=aluno[4],
-            text=texto
+    try:
+        enviar_whatsapp_template(
+            telefone=telefone,
+            responsavel=responsavel,
+            aluno_nome=aluno_nome,
+            data_hora=data_formatada,
+            motivo=motivo
         )
-        
+
         registro = atualizar_status_notificacao(
-        id=registro[0],
-        status="ENVIADA"
+            id=registro[0],
+            status="ENVIADA"
         )
-    except (httpx.HTTPStatusError, httpx.RequestError):
+    except (httpx.HTTPStatusError, httpx.RequestError) as e:
+        print(f"[ERRO TEMPLATE] Falha ao enviar: {e}")
         registro = atualizar_status_notificacao(id=registro[0], status="FALHOU")
-        raise
+        # Não precisa dar raise aqui, deixa salvar como FALHOU pra reenviar depois
+        # Se quiser manter o raise, pode manter
 
     return registro
 

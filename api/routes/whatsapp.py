@@ -14,7 +14,7 @@ def testar_whatsapp(dados: TesteWhatsapp):
         )
         return {
             "message": "Mensagem enviada com sucesso!!",
-            "evolution_response":resposta
+            "whatsapp_response":resposta
         }
     except httpx.HTTPStatusError as erro:
         raise HTTPException(

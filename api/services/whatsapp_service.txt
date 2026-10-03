@@ -1,0 +1,32 @@
+import os
+import httpx
+from dotenv import load_dotenv
+load_dotenv()
+
+PHONE_ID = os.getenv("WHATSAPP_PHONE_ID", "1437899932729215")
+TOKEN = os.getenv("WHATSAPP_TOKEN") # seu token longo
+VERSION = "v25.0"
+
+def enviar_mensagem(number: str, text: str):
+    """Mantém MESMA assinatura que você já usa. Só muda dentro."""
+    if not TOKEN:
+        raise RuntimeError("WHATSAPP_TOKEN não configurado no .env")
+
+    # Cloud API precisa só de números, sem @s.whatsapp.net
+    numero_limpo = number.replace("+","").replace(" ","").replace("-","")
+
+    url = f"https://graph.facebook.com/{VERSION}/{PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": numero_limpo,
+        "type": "text",
+        "text": {"body": text}
+    }
+    
+    r = httpx.post(url, headers=headers, json=payload, timeout=15)
+    r.raise_for_status()
+    return r.json()
