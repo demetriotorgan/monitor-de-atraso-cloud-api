@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from services.whatsapp_service import enviar_whatsapp_template # MUDOU AQUI
+from services.whatsapp_service import enviar_whatsapp_template, WhatsappAPIError
 from database import get_connection
 from services.aluno_service import buscar_aluno
 import httpx
@@ -42,7 +42,7 @@ def reenviar_notificacao(id: int):
     aluno_nome = aluno[1]
     telefone = aluno[4]
     motivo = atraso[3]
-    data_formatada = atraso[2].strftime("%d/%m/%Y às %H:%M")
+    data_hora = atraso[2]
 
     try:
         # AGORA USANDO TEMPLATE OFICIAL
@@ -50,7 +50,7 @@ def reenviar_notificacao(id: int):
             telefone=telefone,
             responsavel=responsavel,
             aluno_nome=aluno_nome,
-            data_hora=data_formatada,
+            data_hora=data_hora,
             motivo=motivo
         )
 
@@ -66,9 +66,35 @@ def reenviar_notificacao(id: int):
 
         return registro
 
-    except (httpx.HTTPStatusError, httpx.RequestError) as e:
-        print(f"Erro no reenvio template: {e}")
-        raise HTTPException(
-            status_code=502,
-            detail="Não foi possível reenviar a notificação."
+    except WhatsappAPIError as e:
+        print(f"Erro da Meta no reenvio: {e}")        
+        
+        raise NotificacaoError(
+            mensagem="Falha ao reenviar notificação",
+            status_meta=e.status_code,
+            codigo_meta=e.code,
+            mensagem_meta=e.message,
+            tipo_meta=e.error_type,
+            detalhe_meta=e.details,
+            fbtrace_id=e.fbtrace_id
         )
+
+#---Tratamento de erro da meta
+class NotificacaoError(Exception):
+    def __init__(
+        self,
+        mensagem,
+        status_meta=None,
+        codigo_meta=None,
+        mensagem_meta=None,
+        tipo_meta=None,
+        detalhe_meta=None,
+        fbtrace_id=None
+    ):
+        self.mensagem = mensagem
+        self.status_meta = status_meta
+        self.codigo_meta = codigo_meta
+        self.mensagem_meta = mensagem_meta
+        self.tipo_meta = tipo_meta
+        self.detalhe_meta = detalhe_meta
+        self.fbtrace_id = fbtrace_id

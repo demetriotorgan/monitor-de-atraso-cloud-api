@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from models import AtrasoCreate, AtrasoResponse, AtrasoUpdate
 
-from services.notificacao_service import reenviar_notificacao
+
+from services.notificacao_service import reenviar_notificacao, NotificacaoError
 from services.atraso_service import (
     registrar_atraso,
     listar_atrasos,
@@ -108,6 +109,25 @@ def reenviar(id: int):
         }
     except HTTPException:
         raise
+    except NotificacaoError as erro:
+        print(f"[ERRO META] {erro}")
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "mensagem": erro.mensagem,
+                "erro_meta":{
+                    "status": erro.status_meta,
+                    "codigo": erro.codigo_meta,
+                    "mensagem": erro.mensagem_meta,
+                    "tipo": erro.tipo_meta,
+                    "detalhe": erro.detalhe_meta,
+                    "fbtrace_id": erro.fbtrace_id
+                }
+            }
+        )
     except Exception as erro:
         print(f"[ERRO REENVIO] {erro}")
-        raise HTTPException(status_code=500, detail=f"Erro ao reenviar notificação: {erro}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao reenviar notificação: {erro}"
+        )

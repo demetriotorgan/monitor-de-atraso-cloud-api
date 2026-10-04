@@ -64,14 +64,14 @@ def registrar_atraso(atraso: AtrasoCreate):
     aluno_nome = aluno[1]
     telefone = aluno[4]
     motivo = registro[3]
-    data_formatada = registro[2].strftime("%d/%m/%Y às %H:%M")
+    data_hora = registro[2]
 
     try:
         enviar_whatsapp_template(
             telefone=telefone,
             responsavel=responsavel,
             aluno_nome=aluno_nome,
-            data_hora=data_formatada,
+            data_hora=data_hora,
             motivo=motivo
         )
 
@@ -117,7 +117,7 @@ def buscar_atraso(id:int):
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, motivo, aluno_id, data_hora
+                SELECT id, motivo, aluno_id, data_hora,status_notificacao
                 FROM atrasos
                 WHERE id = %s
                 """,
@@ -133,7 +133,8 @@ def buscar_atraso(id:int):
         "id":registro[0],
         "motivo":registro[1],
         "aluno_id":registro[2],
-        "data_hora":registro[3]
+        "data_hora":registro[3],
+        "status_notificacao": registro[4]
     }
     
 
@@ -175,7 +176,7 @@ def atualizar_atraso(id: int, atraso: AtrasoCreate):
                 motivo = %s,
                 data_hora = CURRENT_TIMESTAMP
             WHERE id = %s
-            RETURNING id, aluno_id, data_hora, motivo
+            RETURNING id, aluno_id, data_hora, motivo, status_notificacao
             """,
                 (atraso.aluno_id,atraso.motivo,id)
             )
@@ -189,7 +190,8 @@ def atualizar_atraso(id: int, atraso: AtrasoCreate):
         "id":registro[0],
         "aluno_id":registro[1],
         "data_hora":registro[2],
-        "motivo":registro[3]
+        "motivo":registro[3],
+        "status_notificacao": registro[4]
     }
 
 #-----------PATCH-------
@@ -204,7 +206,7 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, aluno_id, data_hora, motivo
+                SELECT id, aluno_id, data_hora, motivo, status_notificacao
                 FROM atrasos
                 WHERE id = %s
                 """,
@@ -233,7 +235,7 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
                     aluno_id=%s,
                     motivo=%s
                 WHERE id = %s
-                RETURNING id, aluno_id, data_hora, motivo
+                RETURNING id, aluno_id, data_hora, motivo,status_notificacao
                 """,
                 (aluno_id, motivo,id)
             )
@@ -242,7 +244,8 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
         "id":registro[0],
         "aluno_id":registro[1],
         "data_hora":registro[2],
-        "motivo":registro[3]
+        "motivo":registro[3],
+        "status_notificacao": registro[4]
     } 
    
     
