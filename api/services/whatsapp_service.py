@@ -1,16 +1,24 @@
 import os
 import httpx
 from dotenv import load_dotenv
+from datetime import datetime
+import pytz
 
 load_dotenv() # carrega seu .env
 
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 
-def enviar_whatsapp_template(telefone: str, responsavel: str, aluno_nome: str, data_hora: str, motivo: str):
+def enviar_whatsapp_template(telefone: str, responsavel: str, aluno_nome: str, motivo: str):
 
     if not WHATSAPP_TOKEN or not WHATSAPP_PHONE_NUMBER_ID:
         raise Exception("WHATSAPP_TOKEN ou WHATSAPP_PHONE_NUMBER_ID não encontrados no .env")
+    
+    # Formata horário de Brasília
+    tz = pytz.timezone("America/Sao_Paulo")
+    agora = datetime.now(tz)
+    hora = agora.strftime("%H:%M")
+    data = agora.strftime("%d/%m/%Y")
 
     url = f"https://graph.facebook.com/v21.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
 
@@ -32,7 +40,8 @@ def enviar_whatsapp_template(telefone: str, responsavel: str, aluno_nome: str, d
                     "parameters": [
                         {"type": "text", "text": responsavel},
                         {"type": "text", "text": aluno_nome},
-                        {"type": "text", "text": data_hora},
+                        {"type": "text", "text": hora},
+                        {"type": "text", "text": data},
                         {"type": "text", "text": motivo}
                     ]
                 }
