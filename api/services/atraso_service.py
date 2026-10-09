@@ -3,6 +3,7 @@ from models import AtrasoCreate, AtrasoUpdate
 from database import get_connection
 from services.aluno_service import buscar_aluno
 from services.whatsapp_service import enviar_whatsapp_template
+from services.time_service import converter_para_brasilia
 import httpx
 
 
@@ -105,7 +106,7 @@ def listar_atrasos():
             "id":registro[0],
             "motivo":registro[1],
             "aluno_id": registro[2],
-            "data_hora":registro[3],
+            "data_hora": converter_para_brasilia(registro[3]),
             "status_notificacao": registro[4]
         }
         for registro in registros
@@ -133,7 +134,7 @@ def buscar_atraso(id:int):
         "id":registro[0],
         "motivo":registro[1],
         "aluno_id":registro[2],
-        "data_hora":registro[3],
+        "data_hora": converter_para_brasilia(registro[3]),
         "status_notificacao": registro[4]
     }
     
@@ -189,7 +190,7 @@ def atualizar_atraso(id: int, atraso: AtrasoCreate):
     return{
         "id":registro[0],
         "aluno_id":registro[1],
-        "data_hora":registro[2],
+        "data_hora": converter_para_brasilia(registro[2]),
         "motivo":registro[3],
         "status_notificacao": registro[4]
     }
@@ -243,7 +244,7 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
     return {
         "id":registro[0],
         "aluno_id":registro[1],
-        "data_hora":registro[2],
+        "data_hora": converter_para_brasilia(registro[2]),
         "motivo":registro[3],
         "status_notificacao": registro[4]
     } 

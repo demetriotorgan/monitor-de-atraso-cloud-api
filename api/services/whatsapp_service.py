@@ -1,6 +1,7 @@
 import os
 import httpx
 from dotenv import load_dotenv
+from services.time_service import converter_para_brasilia
 
 load_dotenv() # carrega seu .env
 
@@ -12,6 +13,7 @@ def enviar_whatsapp_template(telefone: str, responsavel: str, aluno_nome: str, d
     if not WHATSAPP_TOKEN or not WHATSAPP_PHONE_NUMBER_ID:
         raise Exception("WHATSAPP_TOKEN ou WHATSAPP_PHONE_NUMBER_ID não encontrados no .env")
     
+    data_hora = converter_para_brasilia(data_hora)
     hora = data_hora.strftime("%H:%M")
     data = data_hora.strftime("%d/%m/%Y")
     

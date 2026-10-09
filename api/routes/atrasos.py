@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from models import AtrasoCreate, AtrasoResponse, AtrasoUpdate
+from services.time_service import converter_para_brasilia
 
 
 from services.notificacao_service import reenviar_notificacao, NotificacaoError
@@ -27,7 +28,7 @@ def criar(atraso: AtrasoCreate):
         return {
             "id": resultado[0],
             "aluno_id": resultado[1],
-            "data_hora": resultado[2],
+            "data_hora": converter_para_brasilia(resultado[2]),
             "motivo": resultado[3],
             "status_notificacao": resultado[4]
         }
@@ -103,7 +104,7 @@ def reenviar(id: int):
         return {
             "id": registro[0],
             "aluno_id": registro[1],
-            "data_hora": registro[2],
+            "data_hora": converter_para_brasilia(registro[2]),
             "motivo": registro[3],
             "status_notificacao": registro[4]
         }
