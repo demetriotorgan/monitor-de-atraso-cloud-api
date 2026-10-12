@@ -8,10 +8,16 @@ class AtrasoCreate(BaseModel):
 
 class AtrasoResponse(BaseModel):
     id: int
-    aluno_id:int
-    data_hora:datetime
-    motivo:str
+    aluno_id: int
+    data_hora: datetime
+    motivo: str
     status_notificacao: str
+
+class AtrasoDetalhadoResponse(AtrasoResponse):
+    nome: str
+    serie: str
+    responsavel: str
+    telefone_responsavel: str
 
 class AtrasoUpdate(BaseModel):
     aluno_id: int | None = None

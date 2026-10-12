@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from models import AtrasoCreate, AtrasoResponse, AtrasoUpdate
+from models import AtrasoCreate, AtrasoResponse, AtrasoUpdate, AtrasoDetalhadoResponse
 from services.time_service import converter_para_brasilia
 
 
@@ -43,7 +43,7 @@ def criar(atraso: AtrasoCreate):
         )
 
 #---------ROTA GET--------
-@router.get('/', response_model=list[AtrasoResponse])
+@router.get('/', response_model=list[AtrasoDetalhadoResponse])
 def listar():
     try:
         return listar_atrasos()

@@ -11,7 +11,7 @@ def criar_atraso(atraso: AtrasoCreate):
     aluno = buscar_aluno(atraso.aluno_id)
     if aluno is None:
         return None
-    
+
     with get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -21,8 +21,8 @@ def criar_atraso(atraso: AtrasoCreate):
                     data_hora,
                     motivo
                 )
-                VALUES(%s, CURRENT_TIMESTAMP,%s)   
-                RETURNING id, aluno_id, data_hora, motivo,status_notificacao    
+                VALUES(%s, CURRENT_TIMESTAMP,%s)
+                RETURNING id, aluno_id, data_hora, motivo,status_notificacao
                 """,
                 (atraso.aluno_id, atraso.motivo)
             )
@@ -95,23 +95,38 @@ def listar_atrasos():
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, motivo, aluno_id, data_hora, status_notificacao
-                FROM atrasos
-                ORDER BY id                    
+                SELECT
+                a.id,
+                a.aluno_id,
+                al.nome,
+                al.serie,
+                al.responsavel,
+                al.telefone_responsavel,
+                a.data_hora,
+                a.motivo,
+                a.status_notificacao
+                FROM atrasos AS a
+                INNER JOIN alunos AS al
+                ON al.id = a.aluno_id
+                ORDER BY a.id
                 """
             )
             registros = cursor.fetchall()
     return[
         {
             "id":registro[0],
-            "motivo":registro[1],
-            "aluno_id": registro[2],
-            "data_hora": converter_para_brasilia(registro[3]),
-            "status_notificacao": registro[4]
+            "aluno_id": registro[1],
+            "nome": registro[2],
+            "serie": registro[3],
+            "responsavel": registro[4],
+            "telefone_responsavel": registro[5],
+            "data_hora": converter_para_brasilia(registro[6]),
+            "motivo": registro[7],
+            "status_notificacao": registro[8],
         }
         for registro in registros
     ]
-    
+
 
 def buscar_atraso(id:int):
     with get_connection() as conn:
@@ -137,7 +152,7 @@ def buscar_atraso(id:int):
         "data_hora": converter_para_brasilia(registro[3]),
         "status_notificacao": registro[4]
     }
-    
+
 
 #----------DELETE------------
 def excluir_atraso(id:int):
@@ -157,10 +172,10 @@ def excluir_atraso(id:int):
                 )
     return{
         'message':'Atraso excluído com sucesso!'
-    }             
+    }
 
 #---------PUT--------
-def atualizar_atraso(id: int, atraso: AtrasoCreate):    
+def atualizar_atraso(id: int, atraso: AtrasoCreate):
     aluno = buscar_aluno(atraso.aluno_id)
     if aluno is None:
         raise HTTPException(
@@ -172,8 +187,8 @@ def atualizar_atraso(id: int, atraso: AtrasoCreate):
             cursor.execute(
             """
             UPDATE atrasos
-            SET 
-                aluno_id= %s,               
+            SET
+                aluno_id= %s,
                 motivo = %s,
                 data_hora = CURRENT_TIMESTAMP
             WHERE id = %s
@@ -221,14 +236,14 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
                 )
             aluno_id = dados.get('aluno_id', registro[1])
             motivo = dados.get('motivo', registro[3])
-            
+
             aluno = buscar_aluno(aluno_id)
             if aluno is None:
                 raise HTTPException(
                     status_code=404,
                     detail="Aluno não encontrado"
                 )
-            
+
             cursor.execute(
                 """
                 UPDATE atrasos
@@ -247,7 +262,6 @@ def atualizar_parcialmente(id: int, atraso:AtrasoUpdate):
         "data_hora": converter_para_brasilia(registro[2]),
         "motivo":registro[3],
         "status_notificacao": registro[4]
-    } 
-   
-    
- 
+    }
+
+
