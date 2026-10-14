@@ -4,28 +4,24 @@ services:
     container_name: monitor-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "MonitorAtraso2026Forte!"
-      POSTGRES_DB: monitor_atraso
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: monitor-api
     restart: always
     depends_on:
       - db
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      DATABASE_URL: "postgresql://postgres:MonitorAtraso2026Forte!@db:5432/monitor_atraso"
-    env_file:
-      - .env
+      DATABASE_URL: ${DATABASE_URL}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
 
 volumes:
   pgdata:
